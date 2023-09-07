@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Builder</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        .draggable {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            cursor: move;
+            background-color: #f5f5f5;
+        }
+
+        #formBuilder {
+            border: 1px dashed #ccc;
+            min-height: 200px;
+            padding: 20px;
+        }
+
+        .form-element {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .validation {
+            margin-top: 10px;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <h2>Toolbox</h2>
+                <div class="draggable btn btn-secondary mb-2" data-type="text">Text Input</div>
+                <div class="draggable btn btn-secondary mb-2" data-type="number">Number Input</div>
+                <div class="draggable btn btn-secondary mb-2" data-type="dropdown">Dropdown List</div>
+            </div>
+
+            <div class="col-md-9">
+                <h2>Form Builder</h2>
+                <div id="formBuilder" class="mb-4"></div>
+                <button onclick="generateForm()" class="btn btn-primary">Generate Form</button>
+                <div id="finalForm" class="mt-4">
+                    <h2>Your Custom Form:</h2>
+                </div>
+                <button onclick="checkValidation()" class="btn btn-warning mt-2">Check Validation</button>
+                <button onclick="downloadForm()" class="btn btn-success mt-2">Download Form HTML</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(function() {
+        $(".draggable").draggable({
+            revert: "invalid",
+            helper: "clone"
+        });
+
+        $("#formBuilder").droppable({
+            accept: ".draggable",
+            drop: function(event, ui) {
+                let type = ui.draggable.data("type");
+                addElementToForm(type);
+            }
+        });
+    });
+
+    function addElementToForm(type) {
+        let element = "";
+        switch (type) {
+            case "text":
+                element = `
+                    <div class="form-element">
+                        Text Input: <input type="text">
+                        <span class="error-message"></span>
+                        <button onclick="showValidationOptions(this)">Edit</button>
+                        <div class="validation">
+                            Min Length: <input type="number" class="min-length">
+                            Max Length: <input type="number" class="max-length">
+                            <input type="checkbox" class="required"> Required
+                        </div>
+                    </div>
+                `;
+                break;
+            case "number":
+                element = `
+                    <div class="form-element">
+                        Number Input: <input type="number">
+                        <span class="error-message"></span>
+                        <button onclick="showValidationOptions(this)">Edit</button>
+                        <div class="validation">
+                            Min Value: <input type="number" class="min-value">
+                            Max Value: <input type="number" class="max-value">
+                            <input type="checkbox" class="required"> Required
+                        </div>
+                    </div>
+                `;
+                break;
+            case "dropdown":
+                element = `
+                    <div class="form-element">
+                        Dropdown: <select><option>Option 1</option><option>Option 2</option></select>
+                        <span class="error-message"></span>
+                        <button onclick="showValidationOptions(this)">Edit</button>
+                        <div class="validation">
+                            <input type="checkbox" class="required"> Required
+                        </div>
+                    </div>
+                `;
+                break;
+        }
+        $("#formBuilder").append(element);
+    }
+
+    function showValidationOptions(button) {
+        $(button).nextAll(".validation").first().toggle();
+    }
+
+    function generateForm() {
+        var clonedContent = $("#formBuilder").clone();
+
+        clonedContent.find(".form-element input[type=text]").each(function() {
+            var parentElem = $(this).parent();
+            var minLength = parentElem.find(".min-length").val();
+            var maxLength = parentElem.find(".max-length").val();
+            var required = parentElem.find(".required").prop("checked");
+            if (minLength) $(this).attr("minlength", minLength);
+            if (maxLength) $(this).attr("maxlength", maxLength);
+            if (required) $(this).attr("required", true);
+        });
+
+        clonedContent.find(".form-element input[type=number]").each(function() {
+            var parentElem = $(this).parent();
+            var minValue = parentElem.find(".min-value").val();
+            var maxValue = parentElem.find(".max-value").val();
+            var required = parentElem.find(".required").prop("checked");
+            if (minValue) $(this).attr("min", minValue);
+            if (maxValue) $(this).attr("max", maxValue);
+            if (required) $(this).attr("required", true);
+        });
+
+        clonedContent.find(".form-element select").each(function() {
+            var parentElem = $(this).parent();
+            var required = parentElem.find(".required").prop("checked");
+            if (required) $(this).attr("required", true);
+        });
+
+        clonedContent.find("button").remove();
+        clonedContent.find(".validation").remove();
+
+        $("#finalForm").html(clonedContent.html());
+    }
+
+
+    function checkValidation() {
+        $("#finalForm .error-message").text('');
+
+        $("#finalForm input[type=text]").each(function() {
+            var minLength = $(this).attr("minlength");
+            var maxLength = $(this).attr("maxlength");
+            var val = $(this).val();
+            var errorMessage = "";
+
+            if ($(this).attr("required") && !val) {
+                errorMessage = "This field is required.";
+            } else if (minLength && val.length < minLength) {
+                errorMessage = "Text is too short.";
+            } else if (maxLength && val.length > maxLength) {
+                errorMessage = "Text is too long.";
+            }
+
+            if(errorMessage) {
+                $(this).next(".error-message").text(errorMessage);
+            }
+        });
+
+        $("#finalForm input[type=number]").each(function() {
+            var minValue = $(this).attr("min");
+            var maxValue = $(this).attr("max");
+            var val = parseFloat($(this).val());
+            var errorMessage = "";
+
+            if ($(this).attr("required") && !val) {
+                errorMessage = "This field is required.";
+            } else if (minValue && val < parseFloat(minValue)) {
+                errorMessage = "Value is too low.";
+            } else if (maxValue && val > parseFloat(maxValue)) {
+                errorMessage = "Value is too high.";
+            }
+
+            if(errorMessage) {
+                $(this).next(".error-message").text(errorMessage);
+            }
+        });
+
+        $("#finalForm select").each(function() {
+            if ($(this).attr("required") && !$(this).val()) {
+                $(this).next(".error-message").text("This field is required.");
+            }
+        });
+    }
+
+    function downloadForm() {
+        var formHtml = $("#finalForm").html();
+        
+        var validationScript = `
+            &lt;script&gt;
+                ${checkValidation.toString()}
+            &lt;/script&gt;
+        `;
+
+        formHtml += validationScript.replace(/&lt;/g, '<').replace(/&gt;/g, '>');  // decode to actual '<' and '>'
+        
+        var blob = new Blob([formHtml], {type: "text/html;charset=utf-8"});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "custom_form.html";
+        a.click();
+    }
+
+</script>
+
+</body>
+
+</html>
